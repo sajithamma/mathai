@@ -4,9 +4,7 @@ from models import StudentSnapshot, Question, QuestionAttempt
 import json
 from typing import Optional
 
-
 DB_NAME = 'adaptive_learning.db'
-
 
 def init_db():
     """Initializes the database with necessary tables."""
@@ -44,7 +42,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-
 def save_snapshot_to_db(snapshot: StudentSnapshot):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -52,11 +49,10 @@ def save_snapshot_to_db(snapshot: StudentSnapshot):
     cursor.execute('''
     INSERT OR REPLACE INTO students (student_id, snapshot)
     VALUES (?, ?)
-    ''', (snapshot.student_id, snapshot.json()))
+    ''', (snapshot.student_id, snapshot.model_dump_json()))
     
     conn.commit()
     conn.close()
-
 
 def load_snapshot_from_db(student_id: str) -> Optional[StudentSnapshot]:
     conn = sqlite3.connect(DB_NAME)
@@ -68,11 +64,10 @@ def load_snapshot_from_db(student_id: str) -> Optional[StudentSnapshot]:
     
     if row:
         snapshot_json = row[0]
-        snapshot = StudentSnapshot.parse_raw(snapshot_json)
+        snapshot = StudentSnapshot.model_validate_json(snapshot_json)
         return snapshot
     else:
         return None
-
 
 def save_question_to_db(question: Question):
     conn = sqlite3.connect(DB_NAME)
@@ -81,11 +76,10 @@ def save_question_to_db(question: Question):
     cursor.execute('''
     INSERT OR REPLACE INTO questions (question_id, question_data)
     VALUES (?, ?)
-    ''', (question.question_id, question.json()))
+    ''', (question.question_id, question.model_dump_json()))
     
     conn.commit()
     conn.close()
-
 
 def save_attempt_to_db(student_id: str, question_id: str, attempt: QuestionAttempt):
     conn = sqlite3.connect(DB_NAME)
@@ -94,7 +88,7 @@ def save_attempt_to_db(student_id: str, question_id: str, attempt: QuestionAttem
     cursor.execute('''
     INSERT INTO attempts (student_id, question_id, attempt_data)
     VALUES (?, ?, ?)
-    ''', (student_id, question_id, attempt.json()))
+    ''', (student_id, question_id, attempt.model_dump_json()))
     
     conn.commit()
     conn.close()

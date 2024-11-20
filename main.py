@@ -1,6 +1,6 @@
 # main.py
 import sys
-from models import StudentSnapshot, QuestionAttempt, Question
+from models import StudentSnapshot, QuestionAttempt, Question, Level
 from llm import OpenAILLM
 from storage import (
     init_db,
@@ -31,7 +31,11 @@ def main():
         print(f"Hello, {student_id}! Let's get started.")
         snapshot = StudentSnapshot(
             student_id=student_id,
-            levels={"logic_based": 1, "real_life_based": 1, "abstract_based": 1},
+            levels=[
+                Level(name="logic_based", value=1),
+                Level(name="real_life_based", value=1),
+                Level(name="abstract_based", value=1)
+            ],
             weak_areas=[],
             strong_areas=[],
             desired_difficulty_level=1,
@@ -45,7 +49,9 @@ def main():
         
         # Display current levels and scores
         print(f"Student ID: {snapshot.student_id}")
-        print(f"Current Levels: {snapshot.levels}")
+        # Convert levels to a dictionary for display
+        levels_dict = {level.name: level.value for level in snapshot.levels}
+        print(f"Current Levels: {levels_dict}")
         print(f"Desired Difficulty Level: {snapshot.desired_difficulty_level}")
         print(f"Weak Areas: {', '.join(snapshot.weak_areas) if snapshot.weak_areas else 'None'}")
         print(f"Strong Areas: {', '.join(snapshot.strong_areas) if snapshot.strong_areas else 'None'}")
@@ -80,8 +86,11 @@ def main():
             updated_snapshot = llm.evaluate_answer(question, student_answer, snapshot, verbose=verbose)
             
             if updated_snapshot:
-                # Merge the updates into the current snapshot
-                snapshot = snapshot.copy(update=updated_snapshot.dict(exclude_unset=True))
+                # Merge the original snapshot with the updated snapshot
+                snapshot_data = snapshot.dict()
+                updated_data = updated_snapshot.dict()
+                snapshot_data.update(updated_data)
+                snapshot = StudentSnapshot.parse_obj(snapshot_data)
                 save_snapshot_to_db(snapshot)
                 
                 # Find the selected option

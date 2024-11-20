@@ -65,7 +65,7 @@ class OpenAILLM(LLM):
             messages_serializable = [message.copy() for message in messages]
             if 'content' in messages[1]:
                 messages_serializable[1]['content'] = messages[1]['content']
-            print(json.dumps(messages_serializable, indent=2))
+            #print(json.dumps(messages_serializable, indent=2))
 
         try:
             completion = self.client.beta.chat.completions.parse(
@@ -122,7 +122,7 @@ class OpenAILLM(LLM):
             messages_serializable = [message.copy() for message in messages]
             if 'content' in messages[1]:
                 messages_serializable[1]['content'] = messages[1]['content']
-            print(json.dumps(messages_serializable, indent=2))
+            #print(json.dumps(messages_serializable, indent=2))
 
         try:
             completion = self.client.beta.chat.completions.parse(
@@ -133,7 +133,7 @@ class OpenAILLM(LLM):
 
             # Access and parse the response
             updated_snapshot = completion.choices[0].message.parsed
-            print(updated_snapshot)
+            #print(updated_snapshot)
             if verbose:
                 print("\n[DEBUG] Updated snapshot:")
                 print(updated_snapshot.model_dump_json(indent=2))
