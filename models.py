@@ -35,9 +35,14 @@ class QuestionAttempt(BaseModel):
 class QuestionsResponse(BaseModel):
     questions: List[Question]
 
+class Level(BaseModel):
+    name: str
+    value: int
+
+
 class StudentSnapshot(BaseModel):
     student_id: str
-    levels: Dict[str, int]
+    levels: List[Level]  # Changed from Dict[str, int] to List[Level]
     weak_areas: List[str]
     strong_areas: List[str]
     desired_difficulty_level: int

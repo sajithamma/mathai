@@ -3,7 +3,7 @@ import os
 from openai import OpenAI
 from dotenv import load_dotenv
 from typing import List
-from models import StudentSnapshot, Question, QuestionAttempt, QuestionsResponse
+from models import StudentSnapshot, Question, QuestionAttempt, QuestionsResponse, Level
 import json
 import sys  # Add this at the top of llm.py
 
@@ -44,18 +44,18 @@ class OpenAILLM(LLM):
             {
                 "role": "user",
                 "content": f"""
-Generate 3 multiple-choice calculus questions.
+                    Generate 3 multiple-choice calculus questions.
 
-Student Snapshot:
-{snapshot_json}
+                    Student Snapshot:
+                    {snapshot_json}
 
-Requirements:
-- Focus on the student's weak areas and recent errors.
-- Use the desired difficulty level.
-- Provide 4 options for each question, with explanations for each.
-- Ensure explanations clarify why an option is correct or incorrect.
-- Output format must be a JSON object matching the QuestionsResponse model.
-""",
+                    Requirements:
+                    - Focus on the student's weak areas and recent errors.
+                    - Use the desired difficulty level.
+                    - Provide 4 options for each question, with explanations for each.
+                    - Ensure explanations clarify why an option is correct or incorrect.
+                    - Output format must be a JSON object matching the QuestionsResponse model.
+                    """,
             },
         ]
 
@@ -90,30 +90,31 @@ Requirements:
         question_json = question.model_dump_json()
         snapshot_json = snapshot.model_dump_json()
         messages = [
-            {
-                "role": "system",
-                "content": "You are an AI tutor that evaluates student's answers and updates their learning progress.",
-            },
-            {
-                "role": "user",
-                "content": f"""
-Evaluate the student's answer to the following question.
+        {
+            "role": "system",
+            "content": "You are an AI tutor that evaluates student's answers and updates their learning progress.",
+        },
+        {
+            "role": "user",
+            "content": f"""
+            Evaluate the student's answer to the following question.
 
-Question:
-{question_json}
+            Question:
+            {question_json}
 
-Student's Answer: "{student_answer}"
+            Student's Answer: "{student_answer}"
 
-Student Snapshot:
-{snapshot_json}
+            Student Snapshot:
+            {snapshot_json}
 
-Requirements:
-- Provide feedback on the correctness of the answer.
-- Return only the updated fields of the student's snapshot in JSON format.
-- Output format must match the partial StudentSnapshot model.
-""",
-            },
-        ]
+            Requirements:
+            - Provide feedback on the correctness of the answer.
+            - Return the full updated StudentSnapshot in JSON format.
+            - Output format must match the StudentSnapshot model.
+            """,
+        },
+    ]
+        
 
         if verbose:
             print("\n[DEBUG] Evaluating answer with the following prompt:")
@@ -132,6 +133,7 @@ Requirements:
 
             # Access and parse the response
             updated_snapshot = completion.choices[0].message.parsed
+            print(updated_snapshot)
             if verbose:
                 print("\n[DEBUG] Updated snapshot:")
                 print(updated_snapshot.model_dump_json(indent=2))
@@ -150,13 +152,17 @@ if __name__ == '__main__':
 
     # Create a sample StudentSnapshot
     snapshot = StudentSnapshot(
-        student_id="test_student",
-        levels={"logic_based": 2, "real_life_based": 2, "abstract_based": 2},
-        weak_areas=["Chain Rule", "Implicit Differentiation"],
-        strong_areas=["Basic Differentiation"],
-        desired_difficulty_level=2,
-        recent_history=[]
-    )
+    student_id="test_student",
+    levels=[
+        Level(name="logic_based", value=2),
+        Level(name="real_life_based", value=2),
+        Level(name="abstract_based", value=2)
+    ],
+    weak_areas=["Chain Rule", "Implicit Differentiation"],
+    strong_areas=["Basic Differentiation"],
+    desired_difficulty_level=2,
+    recent_history=[]
+)
 
     if args[0] == 'generate':
         # Test generate_questions
