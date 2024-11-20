@@ -4,14 +4,12 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import List
-from models import StudentSnapshot, Question, QuestionAttempt
+from models import StudentSnapshot, Question, QuestionAttempt, QuestionsResponse
 import json
-
 
 # Load environment variables
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
 
 class LLM:
     """Base class/interface for LLMs, providing methods for generating questions and evaluating answers."""
@@ -53,7 +51,7 @@ Requirements:
 - Use the desired difficulty level.
 - Provide 4 options for each question, with explanations for each.
 - Ensure explanations clarify why an option is correct or incorrect.
-- Output format must be a JSON list of Question objects as per the provided schema.
+- Output format must be a JSON object matching the QuestionsResponse model.
 """,
             },
         ]
@@ -63,14 +61,15 @@ Requirements:
             print(json.dumps(messages, indent=2))
         
         try:
-            completion = self.client.chat.completions.parse(
+            completion = self.client.beta.chat.completions.parse(
                 model="gpt-4o-2024-08-06",
                 messages=messages,
-                response_format=List[Question],
+                response_format=QuestionsResponse,  # Use the QuestionsResponse class
             )
             
             # Access and parse the response
-            questions = completion.choices[0].message.parsed
+            questions_response = completion.choices[0].message.parsed
+            questions = questions_response.questions  # Extract the list of questions
             if verbose:
                 print("\n[DEBUG] Generated questions:")
                 for q in questions:
@@ -112,8 +111,8 @@ Requirements:
             print(json.dumps(messages, indent=2))
         
         try:
-            completion = self.client.chat.completions.parse(
-                model="gpt-4-0613",
+            completion = self.client.beta.chat.completions.parse(
+                model="gpt-4o-2024-08-06",
                 messages=messages,
                 response_format=StudentSnapshot,
             )
@@ -127,3 +126,45 @@ Requirements:
         except Exception as e:
             print(f"Error during answer evaluation: {e}")
             return None
+
+
+# Testing code
+if __name__ == '__main__':
+    # Initialize the OpenAILLM instance
+    llm = OpenAILLM()
+    verbose = True  # Set to False to reduce output
+
+    # Create a sample StudentSnapshot
+    snapshot = StudentSnapshot(
+        student_id="test_student",
+        levels={"logic_based": 2, "real_life_based": 2, "abstract_based": 2},
+        weak_areas=["Chain Rule", "Implicit Differentiation"],
+        strong_areas=["Basic Differentiation"],
+        desired_difficulty_level=2,
+        recent_history=[]
+    )
+
+    # Test generate_questions
+    print("Testing generate_questions...")
+    questions = llm.generate_questions(snapshot, verbose=verbose)
+    if questions:
+        for idx, question in enumerate(questions, start=1):
+            print(f"\nQuestion {idx}: {question.question_text}")
+            for option in question.options:
+                print(f"{option.option_label}. {option.option_text}")
+            # Simulate student's answer (for testing, select 'A')
+            student_answer = 'A'
+            print(f"\nSimulated Student Answer: {student_answer}")
+
+            # Test evaluate_answer
+            print("\nTesting evaluate_answer...")
+            updated_snapshot = llm.evaluate_answer(question, student_answer, snapshot, verbose=verbose)
+            if updated_snapshot:
+                # Update the snapshot with the returned changes
+                snapshot = snapshot.copy(update=updated_snapshot.dict(exclude_unset=True))
+                print("\n[DEBUG] Updated Student Snapshot:")
+                print(snapshot.json(indent=2))
+            else:
+                print("Failed to evaluate answer.")
+    else:
+        print("Failed to generate questions.")

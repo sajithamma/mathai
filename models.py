@@ -32,6 +32,8 @@ class QuestionAttempt(BaseModel):
     score: float
     indicators: List[str]
 
+class QuestionsResponse(BaseModel):
+    questions: List[Question]
 
 class StudentSnapshot(BaseModel):
     student_id: str
