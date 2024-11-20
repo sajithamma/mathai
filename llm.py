@@ -60,7 +60,7 @@ class OpenAILLM(LLM):
         ]
 
         if verbose:
-            print("\n[DEBUG] Generating questions...please wait.")
+            print("Generating questions...please wait.")
             # Convert messages to a serializable format
             messages_serializable = [message.copy() for message in messages]
             if 'content' in messages[1]:
@@ -78,7 +78,7 @@ class OpenAILLM(LLM):
             questions_response = completion.choices[0].message.parsed
             questions = questions_response.questions  # Extract the list of questions
             if verbose:
-                print("\n[DEBUG] Questions Generated")
+                print("Questions Generated")
                 # for q in questions:
                 #     print(q.model_dump_json(indent=2))
             return questions
@@ -117,7 +117,7 @@ class OpenAILLM(LLM):
         
 
         if verbose:
-            print("\n[DEBUG] Evaluating answer")
+            print("Evaluating answer...")
             # Convert messages to a serializable format
             messages_serializable = [message.copy() for message in messages]
             if 'content' in messages[1]:
@@ -135,7 +135,7 @@ class OpenAILLM(LLM):
             updated_snapshot = completion.choices[0].message.parsed
             #print(updated_snapshot)
             if verbose:
-                print("\n[DEBUG] Updated snapshot:")
+                print("Updated snapshot.")
                 #print(updated_snapshot.model_dump_json(indent=2))
             return updated_snapshot
         except Exception as e:
