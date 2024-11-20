@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from typing import List
 from models import StudentSnapshot, Question, QuestionAttempt, QuestionsResponse
 import json
+import sys  # Add this at the top of llm.py
+
 
 # Load environment variables
 load_dotenv()
@@ -138,11 +140,13 @@ Requirements:
             print(f"Error during answer evaluation: {e}")
             return None
 
-# Testing code
 if __name__ == '__main__':
     # Initialize the OpenAILLM instance
     llm = OpenAILLM()
     verbose = True  # Set to False to reduce output
+
+    # Parse command line arguments
+    args = sys.argv[1:]  # Get the arguments after the script name
 
     # Create a sample StudentSnapshot
     snapshot = StudentSnapshot(
@@ -154,27 +158,77 @@ if __name__ == '__main__':
         recent_history=[]
     )
 
-    # Test generate_questions
-    print("Testing generate_questions...")
-    questions = llm.generate_questions(snapshot, verbose=verbose)
-    # if questions:
-    #     for idx, question in enumerate(questions, start=1):
-    #         print(f"\nQuestion {idx}: {question.question_text}")
-    #         for option in question.options:
-    #             print(f"{option.option_label}. {option.option_text}")
-    #         # Simulate student's answer (for testing, select 'A')
-    #         student_answer = 'A'
-    #         print(f"\nSimulated Student Answer: {student_answer}")
+    if args[0] == 'generate':
+        # Test generate_questions
+        print("Testing generate_questions...")
+        questions = llm.generate_questions(snapshot, verbose=verbose)
+        if questions:
+            # (Optional) print or process the generated questions
+            pass
+        else:
+            print("Failed to generate questions.")
 
-    #         # Test evaluate_answer
-    #         print("\nTesting evaluate_answer...")
-    #         updated_snapshot = llm.evaluate_answer(question, student_answer, snapshot, verbose=verbose)
-    #         if updated_snapshot:
-    #             # Update the snapshot with the returned changes
-    #             snapshot = snapshot.copy(update=updated_snapshot.dict(exclude_unset=True))
-    #             print("\n[DEBUG] Updated Student Snapshot:")
-    #             print(snapshot.model_dump_json(indent=2))
-    #         else:
-    #             print("Failed to evaluate answer.")
-    # else:
-    #     print("Failed to generate questions.")
+    if args[0] == 'evaluate':
+        # Test evaluate_answer using the provided sample question
+        print("Testing evaluate_answer...")
+        # Sample question JSON (as provided)
+        sample_question_json = '''
+        {
+          "question_id": "Q3",
+          "question_text": "Given f(x) = sin(x^2), find f'(x) using the chain rule.",
+          "options": [
+            {
+              "option_label": "A",
+              "option_text": "f'(x) = 2x cos(x^2)",
+              "is_correct": true,
+              "explanation": "Correct. Using chain rule, derivative of sin(u) is cos(u) * du/dx where u = x^2, thus derivative is 2x cos(x^2)."
+            },
+            {
+              "option_label": "B",
+              "option_text": "f'(x) = cos(x^2)",
+              "is_correct": false,
+              "explanation": "Incorrect. This incorrectly omits the derivative of the inner function x^2."
+            },
+            {
+              "option_label": "C",
+              "option_text": "f'(x) = -2x cos(x^2)",
+              "is_correct": false,
+              "explanation": "Incorrect sign; the differentiation process should not introduce a negative sign here."
+            },
+            {
+              "option_label": "D",
+              "option_text": "f'(x) = 2 cos(x^2)",
+              "is_correct": false,
+              "explanation": "Incorrect. Missing the multiplier x from the chain rule application."
+            }
+          ],
+          "topic": "Differentiation",
+          "subtopic": "Chain Rule",
+          "criterion": "logic_based",
+          "difficulty_level": 2
+        }
+        '''
+        # Parse the sample question JSON into a Question object
+        sample_question = Question.model_validate_json(sample_question_json)
+
+        # Display the question
+        print(f"\nQuestion: {sample_question.question_text}")
+        for option in sample_question.options:
+            print(f"{option.option_label}. {option.option_text}")
+
+        # Simulate student's answer (for testing)
+        student_answer = 'A'  # You can change this as needed
+        print(f"\nSimulated Student Answer: {student_answer}")
+
+        # Test evaluate_answer
+        updated_snapshot = llm.evaluate_answer(sample_question, student_answer, snapshot, verbose=verbose)
+        if updated_snapshot:
+            # Update the snapshot with the returned changes
+            snapshot = snapshot.copy(update=updated_snapshot.model_dump(exclude_unset=True))
+            print("\n[DEBUG] Updated Student Snapshot:")
+            print(snapshot.model_dump_json(indent=2))
+        else:
+            print("Failed to evaluate answer.")
+
+    if args and args[0] not in ['generate', 'evaluate']:
+        print("Usage: python llm.py [generate|evaluate]")
