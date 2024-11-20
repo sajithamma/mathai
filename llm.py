@@ -229,8 +229,14 @@ if __name__ == '__main__':
         # Test evaluate_answer
         updated_snapshot = llm.evaluate_answer(sample_question, student_answer, snapshot, verbose=verbose)
         if updated_snapshot:
-            # Update the snapshot with the returned changes
-            snapshot = snapshot.copy(update=updated_snapshot.model_dump(exclude_unset=True))
+            # Merge the original snapshot data with the updated data
+            snapshot_data = snapshot.dict()
+            updated_data = updated_snapshot.dict()
+            snapshot_data.update(updated_data)
+            
+            # Re-parse the combined data into a StudentSnapshot instance
+            snapshot = StudentSnapshot.parse_obj(snapshot_data)
+            
             print("\n[DEBUG] Updated Student Snapshot:")
             print(snapshot.model_dump_json(indent=2))
         else:
